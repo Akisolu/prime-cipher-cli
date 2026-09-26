@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import os
 import sys
 
@@ -132,9 +133,9 @@ def process_file_decryption(
 def print_menu():
     """Displays the interactive menu and available options."""
     print(f"{GREEN}{BOLD}==================================================")
-    print("      PRIME CIPHER CLI — FILE & KEY EDITION       ")
+    print("      PRIME CIPHER CLI — DUAL MODE EDITION        ")
     print(f"=================================================={RESET}")
-    print("Commands:")
+    print("Interactive Commands:")
     print(
         f"  {CYAN}cipher [key] <text>{RESET}          - Encrypt text (Key is optional)"
     )
@@ -200,7 +201,8 @@ def parse_key_and_content(parts: list):
     return key, content
 
 
-def main():
+def run_interactive_mode():
+    """Runs the interactive REPL shell."""
     clear_screen()
 
     while True:
@@ -271,7 +273,11 @@ def main():
                 out_path = parts[2]
                 key = (
                     int(parts[3])
-                    if len(parts) > 3 and (parts[3].isdigit() or (parts[3].startswith("-") and parts[3][1:].isdigit()))
+                    if len(parts) > 3
+                    and (
+                        parts[3].isdigit()
+                        or (parts[3].startswith("-") and parts[3][1:].isdigit())
+                    )
                     else 0
                 )
                 process_file_encryption(in_path, out_path, key_offset=key)
@@ -286,7 +292,11 @@ def main():
                 out_path = parts[2]
                 key = (
                     int(parts[3])
-                    if len(parts) > 3 and (parts[3].isdigit() or (parts[3].startswith("-") and parts[3][1:].isdigit()))
+                    if len(parts) > 3
+                    and (
+                        parts[3].isdigit()
+                        or (parts[3].startswith("-") and parts[3][1:].isdigit())
+                    )
                     else 0
                 )
                 process_file_decryption(in_path, out_path, key_offset=key)
@@ -303,6 +313,56 @@ def main():
         except (KeyboardInterrupt, EOFError):
             print("\nSession ended. Goodbye!")
             break
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Prime Cipher CLI — Encrypt and Decrypt using Prime Substitution & Key Offset",
+        add_help=True,
+    )
+
+    # Direct CLI arguments
+    parser.add_argument(
+        "-k", "--key", type=int, default=0, help="Numeric key offset for ciphering"
+    )
+    parser.add_argument(
+        "-t", "--text", type=str, help="Plain text to encrypt inline"
+    )
+    parser.add_argument(
+        "-d", "--decipher", type=str, help="Primes string to decrypt inline"
+    )
+    parser.add_argument(
+        "-i", "--input", type=str, help="Path to input file"
+    )
+    parser.add_argument(
+        "-o", "--output", type=str, help="Path to output file"
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["cipher", "decipher"],
+        default="cipher",
+        help="File operation mode when using --input and --output (default: cipher)",
+    )
+
+    args = parser.parse_args()
+
+    # If no key flags were provided, we start interactive mode.
+    if not (args.text or args.decipher or (args.input and args.output)):
+        run_interactive_mode()
+        return
+
+    # Batch Mode / Direct Flags
+    if args.text:
+        print(cipher_text(args.text, key_offset=args.key))
+
+    elif args.decipher:
+        print(decipher_text(args.decipher, key_offset=args.key))
+
+    elif args.input and args.output:
+        if args.mode == "cipher":
+            process_file_encryption(args.input, args.output, key_offset=args.key)
+        else:
+            process_file_decryption(args.input, args.output, key_offset=args.key)
 
 
 if __name__ == "__main__":
