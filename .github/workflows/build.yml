@@ -1,0 +1,50 @@
+name: Build Prime Cipher Executable
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_os:
+        description: 'Operating system for compiling'
+        required: true
+        default: 'ubuntu-latest'
+        type: choice
+        options:
+          - ubuntu-latest
+          - windows-latest
+
+jobs:
+  build:
+    name: Build Executable on ${{ github.event.inputs.target_os }}
+    runs-on: ${{ github.event.inputs.target_os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install dependencies & PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Build standalone executable with PyInstaller
+        run: |
+          pyinstaller --onefile --name="prime-cipher" prime_cipher.py
+
+      - name: Upload Executable Artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: prime-cipher-linux
+          path: dist/prime-cipher
+
+      - name: Upload Executable Artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: prime-cipher-windows
+          path: dist/prime-cipher.exe
