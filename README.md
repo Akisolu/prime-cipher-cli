@@ -19,7 +19,7 @@ Run the script with Python:
 python prime_cipher.py
 ```
 
-Available commands include:
+### Interactive CLI
 
 ```bash
 cipher Hello World
@@ -29,6 +29,41 @@ decipher-file input.txt output.txt
 menu
 exit
 ```
+
+### Inline encryption with optional key
+
+The CLI also supports an optional numeric key offset for inline text operations:
+
+```bash
+cipher 7 Hello World
+decipher 7 223 389 433
+```
+
+The first numeric argument is interpreted as the key, and the same offset must be used for decryption.
+
+### Direct command-line mode
+
+From version `f828e14` onward, the script supports direct execution flags without entering the interactive shell:
+
+```bash
+python prime_cipher.py -k 6 -t "Secret Message"
+python prime_cipher.py -k 6 -d "103 107 109 113"
+python prime_cipher.py -k 6 -i input.txt -o output.txt
+python prime_cipher.py -k 6 -i encrypted.txt -o decrypted.txt --mode decipher
+```
+
+This allows encryption/decryption in batch mode, while the interactive REPL remains available when no direct flags are passed.
+
+## CLI help
+
+The CLI includes built-in help via the following flags:
+
+```bash
+python prime_cipher.py --help
+python prime_cipher.py -h
+```
+
+These options display the available commands and usage details for the tool.
 
 ## Releases
 
