@@ -1,21 +1,15 @@
-name: Build Prime Cipher Executable
+name: Build Prime Cipher Executables
 
 on:
   workflow_dispatch:
-    inputs:
-      target_os:
-        description: 'Operating system for compiling'
-        required: true
-        default: 'ubuntu-latest'
-        type: choice
-        options:
-          - ubuntu-latest
-          - windows-latest
 
 jobs:
   build:
-    name: Build Executable on ${{ github.event.inputs.target_os }}
-    runs-on: ${{ github.event.inputs.target_os }}
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout repository
