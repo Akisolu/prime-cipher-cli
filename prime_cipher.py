@@ -41,7 +41,7 @@ PRIME_TO_CHAR = {str(prime): char for char, prime in zip(ASCII_CHARS, PRIMES)}
 
 
 def cipher_text(plain_text: str, key_offset: int = 0) -> str:
-    """Encrypts plain text into space-separated prime numbers."""
+    """Encrypts plain text into space-separated prime numbers with modular offset."""
     tokens = []
     num_primes = len(PRIMES)
 
@@ -57,7 +57,7 @@ def cipher_text(plain_text: str, key_offset: int = 0) -> str:
 
 
 def decipher_text(ciphered_text: str, key_offset: int = 0) -> str:
-    """Decrypts space-separated prime numbers back into plain text."""
+    """Decrypts space-separated prime numbers back into plain text with modular offset."""
     tokens = ciphered_text.strip().split(" ")
     decoded_chars = []
     num_primes = len(PRIMES)
@@ -132,14 +132,14 @@ def process_file_decryption(
 def print_menu():
     """Displays the interactive menu and available options."""
     print(f"{GREEN}{BOLD}==================================================")
-    print("      PRIME CIPHER CLI — FILE I/O EDITION        ")
+    print("      PRIME CIPHER CLI — FILE & KEY EDITION       ")
     print(f"=================================================={RESET}")
     print("Commands:")
     print(
-        f"  {CYAN}cipher <text>{RESET}                - Encrypt text inline"
+        f"  {CYAN}cipher [key] <text>{RESET}          - Encrypt text (Key is optional)"
     )
     print(
-        f"  {CYAN}decipher <primes>{RESET}            - Decrypt primes inline"
+        f"  {CYAN}decipher [key] <primes>{RESET}      - Decrypt primes (Key is optional)"
     )
     print(
         f"  {CYAN}cipher-file <in> <out> [key]{RESET}  - Encrypt input file to output file"
@@ -169,7 +169,7 @@ def clear_screen():
 
 
 def run_init_demo():
-    """Demonstrates text and file encryption capabilities."""
+    """Demonstrates text and key-offset cipher capabilities."""
     print(f"\n{CYAN}=== INITIAL DEMONSTRATION ==={RESET}")
     sample_text = "Secret Message 2026!"
     key = 7
@@ -180,6 +180,24 @@ def run_init_demo():
     print(f"{YELLOW}Original Text    :{RESET} {sample_text}")
     print(f"{GREEN}Ciphered (Key {key}):{RESET} {encrypted}")
     print(f"{CYAN}Deciphered       :{RESET} {decrypted}\n")
+
+
+def parse_key_and_content(parts: list):
+    """Utility to extract key and text/primes from user command tokens."""
+    key = 0
+    start_index = 1
+
+    if len(parts) > 1 and (
+        parts[1].isdigit() or (parts[1].startswith("-") and parts[1][1:].isdigit())
+    ):
+        try:
+            key = int(parts[1])
+            start_index = 2
+        except ValueError:
+            pass
+
+    content = " ".join(parts[start_index:])
+    return key, content
 
 
 def main():
@@ -206,22 +224,42 @@ def main():
             elif cmd == "cipher":
                 if len(parts) < 2:
                     print(
-                        f"{RED}[!] Error: Text required. Example: cipher Hello World{RESET}"
+                        f"{RED}[!] Usage: cipher [key] <text>\n"
+                        f"    Examples:\n"
+                        f"      cipher Hello World\n"
+                        f"      cipher 7 Secret Message{RESET}"
                     )
                     continue
-                text_to_encrypt = " ".join(parts[1:])
-                print(f"{YELLOW}Result:{RESET} {cipher_text(text_to_encrypt)}")
+
+                key, text_to_encrypt = parse_key_and_content(parts)
+
+                if not text_to_encrypt:
+                    print(f"{RED}[!] Error: No text provided after key.{RESET}")
+                    continue
+
+                encrypted = cipher_text(text_to_encrypt, key_offset=key)
+                print(f"{GREEN}[✓] Ciphered (Key {BOLD}{key}{RESET}{GREEN}):{RESET}")
+                print(f"{YELLOW}{encrypted}{RESET}")
 
             elif cmd == "decipher":
                 if len(parts) < 2:
                     print(
-                        f"{RED}[!] Error: Primes required. Example: decipher 3 2 67{RESET}"
+                        f"{RED}[!] Usage: decipher [key] <primes>\n"
+                        f"    Examples:\n"
+                        f"      decipher 3 2 67\n"
+                        f"      decipher 7 67 19 83{RESET}"
                     )
                     continue
-                primes_to_decrypt = " ".join(parts[1:])
-                print(
-                    f"{YELLOW}Result:{RESET} {decipher_text(primes_to_decrypt)}"
-                )
+
+                key, primes_to_decrypt = parse_key_and_content(parts)
+
+                if not primes_to_decrypt:
+                    print(f"{RED}[!] Error: No prime tokens provided after key.{RESET}")
+                    continue
+
+                decrypted = decipher_text(primes_to_decrypt, key_offset=key)
+                print(f"{GREEN}[✓] Deciphered (Key {BOLD}{key}{RESET}{GREEN}):{RESET}")
+                print(f"{CYAN}{decrypted}{RESET}")
 
             elif cmd == "cipher-file":
                 if len(parts) < 3:
@@ -231,7 +269,11 @@ def main():
                     continue
                 in_path = parts[1]
                 out_path = parts[2]
-                key = int(parts[3]) if len(parts) > 3 and parts[3].isdigit() else 0
+                key = (
+                    int(parts[3])
+                    if len(parts) > 3 and (parts[3].isdigit() or (parts[3].startswith("-") and parts[3][1:].isdigit()))
+                    else 0
+                )
                 process_file_encryption(in_path, out_path, key_offset=key)
 
             elif cmd == "decipher-file":
@@ -242,7 +284,11 @@ def main():
                     continue
                 in_path = parts[1]
                 out_path = parts[2]
-                key = int(parts[3]) if len(parts) > 3 and parts[3].isdigit() else 0
+                key = (
+                    int(parts[3])
+                    if len(parts) > 3 and (parts[3].isdigit() or (parts[3].startswith("-") and parts[3][1:].isdigit()))
+                    else 0
+                )
                 process_file_decryption(in_path, out_path, key_offset=key)
 
             elif cmd == "exit":
