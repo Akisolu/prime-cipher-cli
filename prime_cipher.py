@@ -316,42 +316,113 @@ def run_interactive_mode():
 
 
 def main():
+# Extended help text with ANSI colors and usage constraints note
+    help_epilog = f"""
+{GREEN}{BOLD}Usage Examples (Direct / Batch Mode):{RESET}
+  -----------------------------------
+  1. Encrypt inline text using default key (0):
+     {CYAN}python prime_cipher.py -t "Hello World"{RESET}
+
+  2. Encrypt inline text with a custom numeric key (6):
+     {CYAN}python prime_cipher.py -k 6 -t "Secret Message"{RESET}
+     {CYAN}python prime_cipher.py --key=6 --text="Secret Message"{RESET}
+
+  3. Decrypt a sequence of prime numbers with key (6):
+     {CYAN}python prime_cipher.py -k 6 -d "103 107 109 113"{RESET}
+
+  4. Encrypt a text file:
+     {CYAN}python prime_cipher.py -k 6 -i message.txt -o encrypted.txt{RESET}
+
+  5. Decrypt a text file:
+     {CYAN}python prime_cipher.py -k 6 -i encrypted.txt -o decrypted.txt --mode decipher{RESET}
+
+{GREEN}{BOLD}Interactive Mode (REPL):{RESET}
+  -----------------------
+  Executing the script without execution flags (-t, -d, or both -i and -o)
+  will automatically launch the interactive command shell.
+
+{RED}{BOLD}NOTE ON UNSUPPORTED FLAG COMBINATIONS:{RESET}
+  {YELLOW}- Mixing inline parameters (-t/-d) with file flags (-i/-o) is unsupported.{RESET}
+  {YELLOW}- Passing both -t and -d simultaneously is unsupported.{RESET}
+  {YELLOW}- File operations require BOTH input (-i) AND output (-o) flags.{RESET}
+  {YELLOW}- While the program may execute these unsupported combinations without crashing,{RESET}
+  {YELLOW}  it will not behave as expected (flags may be ignored or yield unexpected results).{RESET}
+"""
     parser = argparse.ArgumentParser(
-        description="Prime Cipher CLI — Encrypt and Decrypt using Prime Substitution & Key Offset",
+        prog="prime_cipher.py",
+        description="Prime Cipher CLI — Symmetric cipher tool using prime substitution and modular key shifting.",
+        epilog=help_epilog,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
         add_help=True,
     )
 
-    # Direct CLI arguments
+    # Key offset argument definition
     parser.add_argument(
-        "-k", "--key", type=int, default=0, help="Numeric key offset for ciphering"
+        "-k",
+        "--key",
+        type=int,
+        default=0,
+        metavar="INT",
+        help="Numeric key offset for modular shifting (Caesar-like shift over primes). Default: 0.",
+    )
+
+    # Mutually exclusive group: prevents passing both -t and -d at the same time
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        "-t",
+        "--text",
+        type=str,
+        metavar="TEXT",
+        help="Plain text string to encrypt directly from the command line.",
+    )
+    mode_group.add_argument(
+        "-d",
+        "--decipher",
+        type=str,
+        metavar="PRIMES",
+        help="Space-separated prime numbers sequence string to decrypt.",
+    )
+
+    # File processing arguments
+    parser.add_argument(
+        "-i",
+        "--input",
+        type=str,
+        metavar="FILE",
+        help="Path to the input file to be processed.",
     )
     parser.add_argument(
-        "-t", "--text", type=str, help="Plain text to encrypt inline"
-    )
-    parser.add_argument(
-        "-d", "--decipher", type=str, help="Primes string to decrypt inline"
-    )
-    parser.add_argument(
-        "-i", "--input", type=str, help="Path to input file"
-    )
-    parser.add_argument(
-        "-o", "--output", type=str, help="Path to output file"
+        "-o",
+        "--output",
+        type=str,
+        metavar="FILE",
+        help="Path to the output file where the result will be saved.",
     )
     parser.add_argument(
         "--mode",
         choices=["cipher", "decipher"],
         default="cipher",
-        help="File operation mode when using --input and --output (default: cipher)",
+        help="Operation mode for file processing: 'cipher' (default) or 'decipher'.",
     )
 
     args = parser.parse_args()
 
-    # If no key flags were provided, we start interactive mode.
+    # Interactive Mode Fallback: Triggered when no primary processing flags are provided
     if not (args.text or args.decipher or (args.input and args.output)):
+        # Defensive check: raise error if user passed only -i or only -o
+        if args.input or args.output:
+            print(
+                f"{RED}[!] Error: File processing requires both input (-i/--input) and output (-o/--output) arguments.{RESET}"
+            )
+            print(
+                f"{YELLOW}Example: python prime_cipher.py -k 6 -i input.txt -o output.txt{RESET}"
+            )
+            sys.exit(1)
+
         run_interactive_mode()
         return
 
-    # Batch Mode / Direct Flags
+    # Direct Execution / Batch Mode Handler
     if args.text:
         print(cipher_text(args.text, key_offset=args.key))
 
@@ -362,7 +433,9 @@ def main():
         if args.mode == "cipher":
             process_file_encryption(args.input, args.output, key_offset=args.key)
         else:
-            process_file_decryption(args.input, args.output, key_offset=args.key)
+            process_file_decryption(
+                args.input, args.output, key_offset=args.key
+            )
 
 
 if __name__ == "__main__":
