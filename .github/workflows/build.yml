@@ -1,7 +1,10 @@
-name: Build Prime Cipher Executables (Nuitka)
+name: Build and Release Prime Cipher Executables
 
 on:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -32,23 +35,47 @@ jobs:
       - name: Build Standalone Executable with Nuitka (Linux)
         if: runner.os == 'Linux'
         run: |
-          python -m nuitka --standalone --onefile --output-filename=prime-cipher prime_cipher.py
+          python -m nuitka --standalone --onefile --output-filename=prime-cipher-linux prime_cipher.py
 
       - name: Build Standalone Executable with Nuitka (Windows)
         if: runner.os == 'Windows'
         run: |
-          python -m nuitka --standalone --onefile --assume-yes-for-downloads --output-filename=prime-cipher.exe prime_cipher.py
+          python -m nuitka --standalone --onefile --assume-yes-for-downloads --output-filename=prime-cipher-windows.exe prime_cipher.py
 
-      - name: Upload Executable Artifact (Linux)
+      - name: Upload Artifact (Linux)
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
-          name: prime-cipher-linux
-          path: prime-cipher
+          name: binary-linux
+          path: prime-cipher-linux
 
-      - name: Upload Executable Artifact (Windows)
+      - name: Upload Artifact (Windows)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: prime-cipher-windows
-          path: prime-cipher.exe
+          name: binary-windows
+          path: prime-cipher-windows.exe
+
+  release:
+    name: Publish Public Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v1.0-${{ github.run_number }}"
+          name: "Prime Cipher Release #${{ github.run_number }}"
+          body: "Latest automated standalone binaries generated with Nuitka."
+          draft: false
+          prerelease: false
+          files: |
+            release-files/binary-linux/prime-cipher-linux
+            release-files/binary-windows/prime-cipher-windows.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
