@@ -1,4 +1,4 @@
-name: Build Prime Cipher Executables
+name: Build Prime Cipher Executables (Nuitka)
 
 on:
   workflow_dispatch:
@@ -20,25 +20,35 @@ jobs:
         with:
           python-version: '3.14'
 
-      - name: Install dependencies & PyInstaller
+      - name: Install dependencies & Nuitka
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller
+          pip install nuitka
 
-      - name: Build standalone executable with PyInstaller
+      - name: Install C Compiler (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y patchelf build-essential
+
+      - name: Build Standalone Executable with Nuitka (Linux)
+        if: runner.os == 'Linux'
         run: |
-          pyinstaller --onefile --name="prime-cipher" prime_cipher.py
+          python -m nuitka --standalone --onefile --output-filename=prime-cipher prime_cipher.py
+
+      - name: Build Standalone Executable with Nuitka (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          python -m nuitka --standalone --onefile --assume-yes-for-downloads --output-filename=prime-cipher.exe prime_cipher.py
 
       - name: Upload Executable Artifact (Linux)
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: prime-cipher-linux
-          path: dist/prime-cipher
+          path: prime-cipher
 
       - name: Upload Executable Artifact (Windows)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: prime-cipher-windows
-          path: dist/prime-cipher.exe
+          path: prime-cipher.exe
